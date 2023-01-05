@@ -12,12 +12,7 @@ using static System.Console;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
-
-
 int j = 0;
-
-
 
 WriteLine("Welcome to Poker!");
 
@@ -27,30 +22,36 @@ do
  List<Player> players = new List<Player>();
 
     Write("Enter number of players: ");
-    int numPlayers = int.Parse(ReadLine());
+    int? numPlayers = int.Parse(ReadLine().Trim());
 
-   
-    for (int i = 0; i < numPlayers; i++)
+   if(numPlayers == 0 || numPlayers == null){}
+    else
     {
-        Write("Enter name of player " + (i + 1) + ": ");
-        string name = ReadLine();
-           
-        players.Add(new Player(name, "Dealer"));
+        for (int i = 0; i < numPlayers; i++)
+        {
+            Write("Enter name of player " + (i + 1) + ": ");
+            string name = ReadLine().Trim();
+
+            if (name == "")
+            {
+                name = "Player" + i++;
+            }
+
+            players.Add(new Player(name, "Dealer"));
+        }
+
+
+        Dealer dealer = new Dealer("Dealer");
+        Game game = new Game(players, dealer);
+
+
+        game.Start();
     }
-    
-    Dealer dealer = new Dealer("Dealer");
-    Game game = new Game(players, dealer);
-
-
-    game.Start();
-
-
-
     WriteLine("\n____________________\n | If u want to :\n | play again : 1\n | Quit : 2");
     j = int.Parse(ReadLine());
 
     Clear();
-} while (j < 2);
+} while (j < 2 || j == 0);
 
 namespace PokerGame
 {
@@ -71,23 +72,24 @@ namespace PokerGame
 
         public void Start()
         {
-            //do
-            //{
+            int Morebet = 0;
+            int PlayerRestant;
 
-            foreach (Player player in players)
+            do
             {
-                player.Haspass = false;
-            }
 
-            deck = new Deck();
+                foreach (Player player in players)
+                {
+                    player.Haspass = false;
+                }
+
+                deck = new Deck();
 
                 // Shuffle the deck
                 deck.Shuffle();
 
                 foreach(Player player in players)
                 {
-                    chipTT += 20;
-
                     player.RemoveChips(20);
                 }
 
@@ -105,7 +107,7 @@ namespace PokerGame
                             WriteLine("  " + card);
                         }
 
-                        player.Continue(player);
+                        Morebet += player.Continue(player);
                     }
                     if (AllPlayersHavePassed() == false)
                     {
@@ -116,6 +118,7 @@ namespace PokerGame
                     }
                 }
 
+                //Boucle For retourne 5 carte
                 for (int i = 0; i < 5; i++)
                 {
                     dealer.AddCard(deck.DrawCard());
@@ -131,13 +134,13 @@ namespace PokerGame
                                 WriteLine("  " + card);
                             }
 
-                            WriteLine("Dealer has: ");
+                            WriteLine("\nDealer has: ");
                             foreach (Card card in dealer.Cards)
                             {
                                 WriteLine("  " + card);
                             }
 
-                            player.Continue(player);
+                            Morebet += player.Continue(player);
                         }
                         if (AllPlayersHavePassed() == false)
                         {
@@ -156,7 +159,7 @@ namespace PokerGame
                 {
                     if (player.Haspass == false)
                     {
-                        WriteLine(player.Name + " has: ");
+                        WriteLine("" + player.Name + " has: ");
                         foreach (Card card in player.Cards)
                         {
                             WriteLine("  " + card);
@@ -177,6 +180,7 @@ namespace PokerGame
                     player.AddDealerHand(dealer.Cards);
 
                     int result = player.CheckHand();
+                    //comparer Result entre Player pour Résult
 
                     switch (result)
                     {
@@ -231,21 +235,61 @@ namespace PokerGame
 
                 }
 
+                List<Player> winners = DetermineWinners();
+
+                ShowWinners(winners, Morebet);
 
                 foreach (Player player in players)
                 {
                     player.ClearHand();
                 }
+
                 dealer.ClearHand();
 
                 RemovePlayersOutOfChips();
-
+            
                 CheckChips();
 
-            //} while ();
+                PlayerRestant = IsGameOver();
+
+                Morebet = 0;
+
+            } while (players.Count > PlayerRestant);
            
         }
 
+        public int IsGameOver()
+        {
+            int i = 0;
+            foreach (Player player in players)
+            {
+                if (player.Chips <= 0)
+                {
+                    i++;
+                }
+            }
+            return i;
+        }
+
+        public List<Player> DetermineWinners()
+        {
+            List<Player> winners = new List<Player>();
+            int maxHandRank = 0;
+            foreach (Player player in players)
+            {
+                if (player.CheckHand() > maxHandRank)
+                {
+                    maxHandRank = player.CheckHand();
+                    winners.Clear();
+                    winners.Add(player);
+                }
+                else if (player.CheckHand() == maxHandRank)
+                {
+                    winners.Add(player);
+                }
+            }
+            return winners;
+        }
 
         public void RemovePlayersOutOfChips()
         {
@@ -281,11 +325,41 @@ namespace PokerGame
         {
             foreach (Player player in players)
             {
-                WriteLine($"{player.Name} has {player.Chips} chips.");
+                WriteLine($"{player.Name} has {player.Chips} chips.\n\n");
             }
         }
 
+        public void ShowWinners(List<Player> winners, int Morebet)
+        {
+            chipTT = 0;
 
+            foreach (Player player in players)
+            {
+                chipTT += 20;
+
+            }
+
+            chipTT += (Morebet * 20);
+
+            if (winners.Count == 1)
+            {
+                WriteLine($"The winner is {winners[0].Name}!");
+                winners[0].AddChips(chipTT);
+            }
+            else
+            {
+                WriteLine("The winners are:");
+                foreach (Player player in winners)
+                {
+                    WriteLine(player.Name);
+                }
+                int splitPot = chipTT / winners.Count;
+                foreach (Player player in winners)
+                {
+                    player.AddChips(splitPot);
+                }
+            }
+        }
 
     }
 
@@ -349,16 +423,18 @@ namespace PokerGame
             WriteLine($"{player.Name} has {player.Chips} chips.\n\n");
         }
 
-        public void Continue(Player player)
+        public int Continue(Player player)
         {
-            int Result;
+            int? Result;
 
+            do
+            {
+                WriteLine("\nQue voulez vous faire?\n1 : Check\n2 : Bet More (20)\n3 : pass\n");
 
-            WriteLine("Que voulez vous faire?\n1 : Check\n2 : Bet More\n3 : pass\n");
+                CheckChipsIndividual(player);
 
-            CheckChipsIndividual(player);
-
-            Result = int.Parse(ReadLine());
+                Result = Convert.ToInt32(ReadLine());
+            } while (Result == 0 || Result > 3);
 
             switch (Result)
             {
@@ -369,11 +445,12 @@ namespace PokerGame
                     break;
                 case (2):
                     Clear();
-                    WriteLine(" " + player.Name + " est Partie \n");
+                    WriteLine(" " + player.Name + " est Réencherie \n");
 
-                    player.HasPass();
+                    RemoveChips(20);
 
-                    break;
+                    return 1;
+
                 case (3):
 
                     player.HasPass();
@@ -384,12 +461,24 @@ namespace PokerGame
 
                     break;
             }
+            return 0;
         }
 
         public void RemoveChips(int amount)
         {
             Chips -= amount;
         }
+
+        public void AddChips(int amount)
+        {
+            Chips += amount;
+        }
+
+        public void ClearHand()
+        {
+            this.Cards.Clear();
+        }
+
 
 
         public void AddDealerHand(List<Card> dealerHand)
