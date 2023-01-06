@@ -14,44 +14,58 @@ using System.Collections.Generic;
 using System.Linq;
 int j = 0;
 
-WriteLine("Welcome to Poker!");
+
 
 do
 {
-  
- List<Player> players = new List<Player>();
 
-    Write("Enter number of players: ");
-    int? numPlayers = int.Parse(ReadLine().Trim());
-
-   if(numPlayers == 0 || numPlayers == null){}
-    else
+    try
     {
-        for (int i = 0; i < numPlayers; i++)
-        {
-            Write("Enter name of player " + (i + 1) + ": ");
-            string name = ReadLine().Trim();
+        Clear();
 
-            if (name == "")
+
+        WriteLine("Welcome to Poker!");
+
+        List<Player> players = new List<Player>();
+        Write("Enter number of players: ");
+
+        int? numPlayers = int.Parse(ReadLine().Trim());
+        if (numPlayers == 0 || numPlayers == null) { }
+        else
+        {
+            for (int i = 0; i < numPlayers; i++)
             {
-                name = "Player" + i++;
+                Write("Enter name of player " + (i + 1) + ": ");
+                string name = ReadLine().Trim();
+
+                if (name == "")
+                {
+                    name = "Player" + i++;
+                }
+
+                players.Add(new Player(name, "Dealer"));
             }
 
-            players.Add(new Player(name, "Dealer"));
+
+            Dealer dealer = new Dealer("Dealer");
+            Game game = new Game(players, dealer);
+
+
+            game.Start();
         }
+        WriteLine("\n____________________\n | If u want to :\n | play again : 1\n | Quit : 2");
+        j = int.Parse(ReadLine());
+
+        Clear();
 
 
-        Dealer dealer = new Dealer("Dealer");
-        Game game = new Game(players, dealer);
-
-
-        game.Start();
     }
-    WriteLine("\n____________________\n | If u want to :\n | play again : 1\n | Quit : 2");
-    j = int.Parse(ReadLine());
+    catch (System.FormatException)
+    {
 
-    Clear();
-} while (j < 2 || j == 0);
+    }
+
+} while (j < 2 || j == 0) ;
 
 namespace PokerGame
 {
@@ -113,8 +127,7 @@ namespace PokerGame
                     {
                         Clear();
                         // End the game
-                        WriteLine("Tout les joueurs se sont coucher. la partie est fini.");
-                        return;
+                        WriteLine("Tout les joueurs se sont coucher. la partie est fini.\nThe Game Restart");
                     }
                 }
 
@@ -147,7 +160,6 @@ namespace PokerGame
                             Clear();
                             // End the game
                             WriteLine("Tout les joueurs se sont coucher. la partie est fini.");
-                            return;
                         }
                     }
                 }
@@ -425,15 +437,23 @@ namespace PokerGame
 
         public int Continue(Player player)
         {
-            int? Result;
+
+            int? Result = 0;
 
             do
             {
-                WriteLine("\nQue voulez vous faire?\n1 : Check\n2 : Bet More (20)\n3 : pass\n");
+                try
+                {
+                    WriteLine("\nQue voulez vous faire?\n1 : Check\n2 : Bet More (20)\n3 : pass\n");
 
-                CheckChipsIndividual(player);
+                    CheckChipsIndividual(player);
 
-                Result = Convert.ToInt32(ReadLine());
+                    Result = Convert.ToInt32(ReadLine());
+                }
+                catch (System.FormatException)
+                {
+
+                }
             } while (Result == 0 || Result > 3);
 
             switch (Result)
